@@ -1,67 +1,87 @@
 import streamlit as st
 
-from screens.control_room.live_monitor import (
-    render_live_monitor
-)
-
-from screens.control_room.incident_review import (
-    render_incident_review
-)
-
-from screens.control_room.evidence_viewer import (
-    render_evidence_viewer
-)
-
-from screens.control_room.activity_log import (
-    render_activity_log
-)
+from command_center import render_command_center
+from live_monitor import render_live_monitor
+from incident_review import render_incident_review
+from evidence_viewer import render_evidence_viewer
+from person_tracking import render_person_tracking
+from ai_analysis import render_ai_analysis
+from hotspot_analysis import render_hotspot_analysis
+from historical_analytics import render_historical_analytics
+from cleanup_monitor import render_cleanup_monitor
+from activity_log import render_activity_log
+from reports import render_reports
 
 
 st.set_page_config(
     page_title="Smart Monitoring AI - Control Room",
-    page_icon="🎥",
-    layout="wide",
+    page_icon="🖥️",
+    layout="wide"
 )
 
-st.title("♻️ Smart Monitoring AI")
-st.caption(
-    "Control Room — AI Monitoring & Human Verification"
-)
 
-st.sidebar.title("Control Room")
+def main():
 
-page = st.sidebar.radio(
-    "Navigation",
-    [
-        "Live Monitor",
-        "Incident Review",
-        "Evidence Viewer",
-        "Activity Log",
-    ],
-)
+    st.sidebar.title("🖥️ Smart Monitoring AI")
 
-st.sidebar.divider()
+    st.sidebar.caption(
+        "AI Control Room"
+    )
 
-st.sidebar.success(
-    "AI Server: Online"
-)
+    page = st.sidebar.radio(
+        "Navigation",
+        [
+            "Command Center",
+            "Live Monitoring",
+            "Active Incidents",
+            "Person & Identity",
+            "AI Analysis",
+            "Evidence",
+            "Human Review",
+            "Hotspot Analysis",
+            "Historical Analytics",
+            "Cleanup Monitoring",
+            "Activity Log",
+            "Reports"
+        ]
+    )
 
-st.sidebar.success(
-    "Database: Connected"
-)
+    if page == "Command Center":
+        render_command_center()
 
-st.sidebar.success(
-    "Camera Network: Online"
-)
+    elif page == "Live Monitoring":
+        render_live_monitor()
 
-if page == "Live Monitor":
-    render_live_monitor()
+    elif page == "Active Incidents":
+        render_incident_review()
 
-elif page == "Incident Review":
-    render_incident_review()
+    elif page == "Person & Identity":
+        render_person_tracking()
 
-elif page == "Evidence Viewer":
-    render_evidence_viewer()
+    elif page == "AI Analysis":
+        render_ai_analysis()
 
-elif page == "Activity Log":
-    render_activity_log()
+    elif page == "Evidence":
+        render_evidence_viewer()
+
+    elif page == "Human Review":
+        render_incident_review()
+
+    elif page == "Hotspot Analysis":
+        render_hotspot_analysis()
+
+    elif page == "Historical Analytics":
+        render_historical_analytics()
+
+    elif page == "Cleanup Monitoring":
+        render_cleanup_monitor()
+
+    elif page == "Activity Log":
+        render_activity_log()
+
+    elif page == "Reports":
+        render_reports()
+
+
+if __name__ == "__main__":
+    main()

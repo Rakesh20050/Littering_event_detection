@@ -1,67 +1,48 @@
 import streamlit as st
 
-from screens.authority.dashboard import render_dashboard
-from screens.authority.incident_analytics import (
-    render_incident_analytics
-)
-from screens.authority.hotspot_analysis import (
-    render_hotspot_analysis
-)
-from screens.authority.risk_prediction import (
-    render_risk_prediction
-)
-from screens.authority.reports import (
-    render_reports
-)
+from dashboard import render_dashboard
+from notifications import render_notifications
+from incident_reports import render_incident_reports
+from hotspot_alerts import render_hotspot_alerts
 
 
 st.set_page_config(
     page_title="Smart Monitoring AI - Authority",
-    page_icon="📊",
-    layout="wide",
+    page_icon="🚨",
+    layout="wide"
 )
 
-st.title("♻️ Smart Monitoring AI")
-st.caption(
-    "Authority Intelligence & Analytics"
-)
 
-st.sidebar.title(
-    "Authority Dashboard"
-)
+def main():
 
-page = st.sidebar.radio(
-    "Navigation",
-    [
-        "Dashboard",
-        "Incident Analytics",
-        "Hotspot Analysis",
-        "Risk Prediction",
-        "Reports",
-    ],
-)
+    st.sidebar.title("🚨 Smart Monitoring AI")
 
-st.sidebar.divider()
+    st.sidebar.caption(
+        "Authority Portal"
+    )
 
-st.sidebar.success(
-    "AI Server: Online"
-)
+    page = st.sidebar.radio(
+        "Menu",
+        [
+            "Dashboard",
+            "Notifications",
+            "Incident Reports",
+            "Hotspot Alerts"
+        ]
+    )
 
-st.sidebar.success(
-    "Database: Connected"
-)
+    if page == "Dashboard":
+        render_dashboard()
 
-if page == "Dashboard":
-    render_dashboard()
+    elif page == "Notifications":
+        render_notifications()
 
-elif page == "Incident Analytics":
-    render_incident_analytics()
+    elif page == "Incident Reports":
+        render_incident_reports()
 
-elif page == "Hotspot Analysis":
-    render_hotspot_analysis()
+    elif page == "Hotspot Alerts":
+        render_hotspot_alerts()
 
-elif page == "Risk Prediction":
-    render_risk_prediction()
 
-elif page == "Reports":
-    render_reports()
+if __name__ == "__main__":
+    main()

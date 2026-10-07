@@ -1,10 +1,3 @@
-"""
-CleanWatch AI - Control Room Live Monitor
-
-Displays the live camera stream coming from
-the CleanWatch AI server.
-"""
-
 import streamlit as st
 
 
@@ -13,24 +6,36 @@ AI_SERVER_URL = "http://127.0.0.1:8000"
 
 def render_live_monitor():
 
-    st.title("🎥 Control Room — Live Monitor")
+    st.title("🎥 Live Camera Monitoring")
 
     st.caption(
-        "Live camera feed received through the CleanWatch AI server"
+        "Live video received through the CleanWatch AI server"
+    )
+
+    camera = st.selectbox(
+        "Select Camera",
+        [
+            "CAMERA_01",
+            "CAMERA_02",
+            "CAMERA_03"
+        ]
     )
 
     col1, col2 = st.columns([3, 1])
 
     with col1:
 
-        st.subheader("Camera 01")
+        st.subheader(camera)
 
-        # Browser displays the MJPEG stream
         st.markdown(
             f"""
             <img
                 src="{AI_SERVER_URL}/camera/video"
                 width="100%"
+                style="
+                    border-radius:10px;
+                    border:1px solid #444;
+                "
             />
             """,
             unsafe_allow_html=True
@@ -40,32 +45,21 @@ def render_live_monitor():
 
         st.subheader("Camera Status")
 
-        st.success("● CAMERA ONLINE")
+        st.success("🟢 ONLINE")
 
         st.write("Camera ID")
-        st.code("CAMERA_01")
+        st.code(camera)
 
-        st.write("Source")
-        st.write("Laptop Webcam")
+        st.write("Stream")
+        st.write("Live")
 
         st.divider()
 
         st.subheader("AI Pipeline")
 
         st.write("🟢 Frame Capture")
-        st.write("🟡 Object Detection")
+        st.write("🟢 Person Detection")
+        st.write("🟡 Waste Detection")
         st.write("🟡 Tracking")
         st.write("🟡 Identity")
         st.write("🟡 Event Analysis")
-
-        st.divider()
-
-        st.info(
-            "AI detection results will appear here "
-            "when the perception pipeline is connected."
-        )
-
-
-if __name__ == "__main__":
-
-    render_live_monitor()

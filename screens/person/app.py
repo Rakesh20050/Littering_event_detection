@@ -1,39 +1,44 @@
 import streamlit as st
 
-from screens.person.report_screen import render_report_screen
-from screens.person.my_reports import render_my_reports
-from screens.person.notifications import render_notifications
+from registration import render_registration
+from profile import render_profile
+from my_reports import render_my_reports
+from notifications import render_notifications
 
 
 st.set_page_config(
     page_title="Smart Monitoring AI - Person",
-    page_icon="♻️",
-    layout="wide",
+    page_icon="👤",
+    layout="wide"
 )
 
-st.title("♻️ Smart Monitoring AI")
-st.caption("Person / Student Application")
 
-st.sidebar.title("Smart Monitoring AI")
+def main():
 
-page = st.sidebar.radio(
-    "Navigation",
-    [
-        "Report an Issue",
-        "My Reports",
-        "Notifications",
-    ],
-)
+    st.sidebar.title("👤 Smart Monitoring AI")
 
-st.sidebar.divider()
-st.sidebar.success("AI Server: Online")
-st.sidebar.success("Database: Connected")
+    page = st.sidebar.radio(
+        "Menu",
+        [
+            "Registration",
+            "My Profile",
+            "My Reports",
+            "Notifications"
+        ]
+    )
 
-if page == "Report an Issue":
-    render_report_screen()
+    if page == "Registration":
+        render_registration()
 
-elif page == "My Reports":
-    render_my_reports()
+    elif page == "My Profile":
+        render_profile()
 
-elif page == "Notifications":
-    render_notifications()
+    elif page == "My Reports":
+        render_my_reports()
+
+    elif page == "Notifications":
+        render_notifications()
+
+
+if __name__ == "__main__":
+    main()

@@ -3,55 +3,45 @@ import streamlit as st
 
 def render_my_reports():
 
-    st.header("My Reports")
+    st.title("📋 My Reports")
 
-    reports = st.session_state.get(
-        "user_reports",
-        []
+    st.caption(
+        "Reports associated with your registered identity"
     )
 
-    if not reports:
-        st.info(
-            "You have not submitted any reports yet."
-        )
-        return
+    reports = [
+        {
+            "Incident": "INC-00124",
+            "Date": "07 Oct 2026",
+            "Location": "Block A",
+            "Status": "Under Review"
+        },
+        {
+            "Incident": "INC-00098",
+            "Date": "02 Oct 2026",
+            "Location": "Cafeteria",
+            "Status": "Resolved"
+        }
+    ]
 
-    st.metric(
-        "Total Reports",
-        len(reports)
-    )
-
-    st.divider()
-
-    for report in reversed(reports):
+    for report in reports:
 
         with st.container(border=True):
 
-            col1, col2, col3 = st.columns(
-                [2, 3, 2]
+            col1, col2, col3, col4 = st.columns(4)
+
+            col1.write(
+                f"**{report['Incident']}**"
             )
 
-            with col1:
-                st.write(
-                    f"**{report['id']}**"
-                )
-
-            with col2:
-                st.write(
-                    f"{report['issue_type']} "
-                    f"— {report['location']}"
-                )
-
-            with col3:
-                st.write(
-                    report["status"]
-                )
-
-            st.caption(
-                report["time"]
+            col2.write(
+                report["Date"]
             )
 
-            if report["description"]:
-                st.write(
-                    report["description"]
-                )
+            col3.write(
+                report["Location"]
+            )
+
+            col4.write(
+                report["Status"]
+            )
