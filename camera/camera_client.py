@@ -60,7 +60,10 @@ def main():
 
         camera.start()
 
+        # ---------------------------------------------------
         # Connect to AI server
+        # ---------------------------------------------------
+
         if not sender.connect():
 
             print()
@@ -70,12 +73,21 @@ def main():
             print("but frames cannot be transmitted.")
             print()
 
-        print()
-        print("Camera is running.")
-        print("Press Q to stop.")
-        print()
+        else:
+
+            # Start background frame sender
+            sender.start()
+
+            print()
+            print("Camera is running.")
+            print("Press Q to stop.")
+            print()
 
         frame_count = 0
+
+        # ---------------------------------------------------
+        # Main camera loop
+        # ---------------------------------------------------
 
         while True:
 
@@ -90,7 +102,9 @@ def main():
             # SEND FRAME TO AI SERVER
             # ------------------------------------------------
 
-            sent = sender.send_frame(frame)
+            if sender.connected:
+
+                sender.send_frame(frame)
 
             frame_count += 1
 
@@ -130,14 +144,29 @@ def main():
                     2
                 )
 
+                cv2.putText(
+                    display_frame,
+                    f"Frames: {frame_count}",
+                    (20, 110),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (255, 255, 255),
+                    2
+                )
+
                 cv2.imshow(
                     "CleanWatch AI - Camera",
                     display_frame
                 )
 
+            # ------------------------------------------------
+            # Keyboard control
+            # ------------------------------------------------
+
             key = cv2.waitKey(1) & 0xFF
 
             if key == ord("q"):
+
                 break
 
     except KeyboardInterrupt:
@@ -152,7 +181,12 @@ def main():
 
     finally:
 
+        # ---------------------------------------------------
+        # Cleanup
+        # ---------------------------------------------------
+
         sender.disconnect()
+
         camera.stop()
 
         cv2.destroyAllWindows()

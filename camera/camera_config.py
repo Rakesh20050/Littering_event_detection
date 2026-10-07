@@ -2,24 +2,36 @@
 CleanWatch AI - Camera Configuration
 """
 
-# 0 = laptop webcam
-#
-# Later this can become a mobile camera stream URL.
-CAMERA_SOURCE = 0
+# -------------------------------------------------------
+# CAMERA SOURCE
+# -------------------------------------------------------
+
+# Phone camera using IP Webcam
+CAMERA_SOURCE = "http://130.1.8.118:8080/video"
 
 
 # Unique camera identifier
 CAMERA_ID = "CAMERA_01"
 
 
-# AI server
+# -------------------------------------------------------
+# AI SERVER
+# -------------------------------------------------------
+
+# FastAPI is running on the same laptop
 AI_SERVER_URL = "http://127.0.0.1:8000"
 
 
-# Resolution
+# -------------------------------------------------------
+# RESOLUTION
+# -------------------------------------------------------
+
 FRAME_WIDTH = 1280
 FRAME_HEIGHT = 720
 
 
-# Preview on laptop
+# -------------------------------------------------------
+# LOCAL PREVIEW
+# -------------------------------------------------------
+
 SHOW_PREVIEW = True

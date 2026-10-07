@@ -3,10 +3,18 @@ CleanWatch AI - Frame Sender
 
 Sends camera frames from the camera device
 to the CleanWatch AI server.
+
+Designed for low-latency streaming:
+- Sends frames continuously
+- Uses a background sender thread
+- Drops old frames when the network is busy
+- Keeps the newest frame available
 """
 
 import cv2
 import requests
+import threading
+import time
 
 
 class FrameSender:
@@ -26,13 +34,33 @@ class FrameSender:
 
         self.connected = False
 
+        # ---------------------------------------------------
+        # Latest-frame buffer
+        # ---------------------------------------------------
+
+        self.latest_frame = None
+        self.frame_lock = threading.Lock()
+
+        # Sender control
+        self.running = False
+        self.sender_thread = None
+
+        # Statistics
+        self.frames_sent = 0
+        self.frames_dropped = 0
+        self.last_send_time = 0
+
+    # -------------------------------------------------------
+    # SERVER CONNECTION
+    # -------------------------------------------------------
+
     def connect(self):
 
         try:
 
             response = requests.get(
                 self.server_url,
-                timeout=3
+                timeout=2
             )
 
             response.raise_for_status()
@@ -53,68 +81,176 @@ class FrameSender:
 
             return False
 
-    def send_frame(self, frame):
+    # -------------------------------------------------------
+    # START BACKGROUND SENDER
+    # -------------------------------------------------------
 
-        if not self.connected:
+    def start(self):
 
-            if not self.connect():
-                return False
+        if self.running:
+            return
 
-        success, encoded = cv2.imencode(
-            ".jpg",
-            frame,
-            [
-                cv2.IMWRITE_JPEG_QUALITY,
-                80
-            ]
+        self.running = True
+
+        self.sender_thread = threading.Thread(
+            target=self._send_loop,
+            daemon=True
         )
 
-        if not success:
-            return False
+        self.sender_thread.start()
 
-        try:
+        print("Frame sender started.")
 
-            response = requests.post(
-                self.frame_endpoint,
+    # -------------------------------------------------------
+    # FRAME INPUT
+    # -------------------------------------------------------
 
-                files={
-                    "frame": (
-                        "frame.jpg",
-                        encoded.tobytes(),
-                        "image/jpeg"
+    def send_frame(self, frame):
+
+        """
+        Store only the newest frame.
+
+        The background sender thread handles
+        network transmission.
+        """
+
+        with self.frame_lock:
+
+            if self.latest_frame is not None:
+                self.frames_dropped += 1
+
+            self.latest_frame = frame
+
+        return True
+
+    # -------------------------------------------------------
+    # BACKGROUND NETWORK LOOP
+    # -------------------------------------------------------
+
+    def _send_loop(self):
+
+        while self.running:
+
+            frame = None
+
+            # Get newest frame
+            with self.frame_lock:
+
+                if self.latest_frame is not None:
+
+                    frame = self.latest_frame
+                    self.latest_frame = None
+
+            if frame is None:
+
+                time.sleep(0.005)
+                continue
+
+            # ------------------------------------------------
+            # Make sure server is connected
+            # ------------------------------------------------
+
+            if not self.connected:
+
+                if not self.connect():
+
+                    time.sleep(0.5)
+                    continue
+
+            # ------------------------------------------------
+            # Encode frame
+            # ------------------------------------------------
+
+            success, encoded = cv2.imencode(
+                ".jpg",
+                frame,
+                [
+                    cv2.IMWRITE_JPEG_QUALITY,
+                    70
+                ]
+            )
+
+            if not success:
+                continue
+
+            # ------------------------------------------------
+            # Send frame
+            # ------------------------------------------------
+
+            try:
+
+                response = requests.post(
+
+                    self.frame_endpoint,
+
+                    files={
+                        "frame": (
+                            "frame.jpg",
+                            encoded.tobytes(),
+                            "image/jpeg"
+                        )
+                    },
+
+                    data={
+                        "camera_id": self.camera_id
+                    },
+
+                    timeout=1
+                )
+
+                if response.status_code == 200:
+
+                    self.frames_sent += 1
+                    self.last_send_time = time.time()
+
+                else:
+
+                    print(
+                        "Frame transmission failed:",
+                        response.status_code
                     )
-                },
 
-                data={
-                    "camera_id": self.camera_id
-                },
+            except requests.RequestException as error:
 
-                timeout=3
-            )
+                print(
+                    "Connection to AI server lost:",
+                    error
+                )
 
-            if response.status_code == 200:
-                return True
+                self.connected = False
 
-            print(
-                "Frame transmission failed:",
-                response.status_code
-            )
+    # -------------------------------------------------------
+    # STATUS
+    # -------------------------------------------------------
 
-            return False
+    def get_stats(self):
 
-        except requests.RequestException as error:
+        return {
+            "connected": self.connected,
+            "frames_sent": self.frames_sent,
+            "frames_dropped": self.frames_dropped,
+            "last_send_time": self.last_send_time
+        }
 
-            print(
-                "Connection to AI server lost:",
-                error
-            )
-
-            self.connected = False
-
-            return False
+    # -------------------------------------------------------
+    # DISCONNECT
+    # -------------------------------------------------------
 
     def disconnect(self):
 
+        self.running = False
+
+        if self.sender_thread is not None:
+
+            self.sender_thread.join(
+                timeout=1
+            )
+
+            self.sender_thread = None
+
         self.connected = False
+
+        with self.frame_lock:
+            self.latest_frame = None
 
         print("Frame sender disconnected.")

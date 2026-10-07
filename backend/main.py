@@ -1,29 +1,38 @@
 """
 CleanWatch AI - Main AI Server
 
-Current pipeline:
+Pipeline:
 
-Camera
-   ↓
-Frame Receiver
-   ↓
-AI Processing Layer
-   ↓
+Phone Camera
+    ↓
+Camera Client
+    ↓
+FastAPI
+    ↓
+Latest Frame Buffer
+    ↓
+YOLO Detection Thread
+    ↓
+Annotated Frame
+    ↓
 Control Room
-
-YOLO, tracking, identity and event detection
-will be connected to the processing section later.
 """
 
-import asyncio
+import threading
 import time
 
 import cv2
+import numpy as np
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import StreamingResponse
+from ultralytics import YOLO
 
 from backend.camera_stream import camera_manager
 
+
+# =========================================================
+# FASTAPI
+# =========================================================
 
 app = FastAPI(
     title="CleanWatch AI",
@@ -31,6 +40,147 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
+# =========================================================
+# YOLO MODEL
+# =========================================================
+
+MODEL_PATH = (
+    r"E:\Littering_event_detection"
+    r"\outputs\waste_detection-3"
+    r"\weights\best.pt"
+)
+
+print()
+print("=" * 60)
+print("Loading CleanWatch AI YOLO model...")
+print("=" * 60)
+
+model = YOLO(MODEL_PATH)
+
+print("YOLO model loaded successfully.")
+print("Classes:", model.names)
+print("=" * 60)
+print()
+
+
+# =========================================================
+# AI FRAME BUFFER
+# =========================================================
+
+ai_lock = threading.Lock()
+
+latest_ai_frame = None
+latest_camera_id = None
+
+ai_running = True
+
+
+# =========================================================
+# STORE FRAME FOR AI
+# =========================================================
+
+def update_ai_frame(frame, camera_id):
+
+    global latest_ai_frame
+    global latest_camera_id
+
+    with ai_lock:
+
+        # Replace old frame with newest frame.
+        # Old frames are intentionally discarded.
+        latest_ai_frame = frame
+        latest_camera_id = camera_id
+
+
+# =========================================================
+# YOLO PROCESSING THREAD
+# =========================================================
+
+def ai_processing_loop():
+
+    global latest_ai_frame
+    global latest_camera_id
+
+    print("AI processing thread started.")
+
+    while ai_running:
+
+        frame = None
+        camera_id = None
+
+        # -------------------------------------------------
+        # Get newest frame
+        # -------------------------------------------------
+
+        with ai_lock:
+
+            if latest_ai_frame is not None:
+
+                frame = latest_ai_frame
+                camera_id = latest_camera_id
+
+                # Remove it from buffer.
+                latest_ai_frame = None
+
+        # -------------------------------------------------
+        # No frame available
+        # -------------------------------------------------
+
+        if frame is None:
+
+            time.sleep(0.01)
+            continue
+
+        # -------------------------------------------------
+        # YOLO detection
+        # -------------------------------------------------
+
+        try:
+
+            results = model.predict(
+                source=frame,
+                conf=0.25,
+                verbose=False
+            )
+
+            annotated_frame = results[0].plot()
+
+            # -------------------------------------------------
+            # Send annotated frame to Control Room buffer
+            # -------------------------------------------------
+
+            camera_manager.update_frame(
+                annotated_frame,
+                camera_id
+            )
+
+        except Exception as error:
+
+            print("YOLO processing error:", error)
+
+            # Keep original frame available if AI fails.
+            camera_manager.update_frame(
+                frame,
+                camera_id
+            )
+
+
+# =========================================================
+# START AI THREAD
+# =========================================================
+
+ai_thread = threading.Thread(
+    target=ai_processing_loop,
+    daemon=True
+)
+
+ai_thread.start()
+
+
+# =========================================================
+# ROOT
+# =========================================================
 
 @app.get("/")
 def root():
@@ -42,11 +192,19 @@ def root():
     }
 
 
+# =========================================================
+# CAMERA STATUS
+# =========================================================
+
 @app.get("/camera/status")
 def camera_status():
 
     return camera_manager.get_status()
 
+
+# =========================================================
+# RECEIVE CAMERA FRAME
+# =========================================================
 
 @app.post("/camera/frame")
 async def receive_camera_frame(
@@ -56,10 +214,9 @@ async def receive_camera_frame(
 
     image_bytes = await frame.read()
 
-    # Convert JPEG bytes to OpenCV image
-    image_array = __import__("numpy").frombuffer(
+    image_array = np.frombuffer(
         image_bytes,
-        dtype=__import__("numpy").uint8
+        dtype=np.uint8
     )
 
     image = cv2.imdecode(
@@ -68,38 +225,33 @@ async def receive_camera_frame(
     )
 
     if image is None:
+
         return {
             "success": False,
             "message": "Invalid image received"
         }
 
-    # Store frame
-    camera_manager.update_frame(
+    # -----------------------------------------------------
+    # Store newest frame for AI processing.
+    #
+    # IMPORTANT:
+    # The API does NOT wait for YOLO.
+    # -----------------------------------------------------
+
+    update_ai_frame(
         image,
         camera_id
     )
-
-    # -------------------------------------------------------
-    # FUTURE AI PIPELINE
-    # -------------------------------------------------------
-    #
-    # detections = person_detector.detect(image)
-    #
-    # tracked_people = tracker.update(detections)
-    #
-    # identities = identity_matcher.identify(...)
-    #
-    # events = littering_detector.process(...)
-    #
-    # decision = decision_engine.evaluate(...)
-    #
-    # -------------------------------------------------------
 
     return {
         "success": True,
         "camera_id": camera_id
     }
 
+
+# =========================================================
+# LIVE VIDEO GENERATOR
+# =========================================================
 
 def generate_video():
 
@@ -109,11 +261,9 @@ def generate_video():
 
         if frame is None:
 
-            # No camera frame yet
-            time.sleep(0.1)
+            time.sleep(0.05)
             continue
 
-        # Convert OpenCV frame → JPEG
         success, encoded = cv2.imencode(
             ".jpg",
             frame
@@ -133,6 +283,10 @@ def generate_video():
 
         time.sleep(0.03)
 
+
+# =========================================================
+# CAMERA VIDEO
+# =========================================================
 
 @app.get("/camera/video")
 def camera_video():

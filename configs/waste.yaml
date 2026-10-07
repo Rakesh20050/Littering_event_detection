@@ -1,0 +1,15 @@
+path: E:/Littering_event_detection/data/processed/waste_yolo
+
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: bottle
+  1: can
+  2: cup
+  3: paper
+  4: plastic
+  5: carton
+  6: glass
+  7: other_waste
