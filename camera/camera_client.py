@@ -12,10 +12,10 @@ AI Server
 
 import cv2
 
-from video_stream import VideoStream
-from frame_sender import FrameSender
+from camera.video_stream import VideoStream
+from camera.frame_sender import FrameSender
 
-from camera_config import (
+from camera.camera_config import (
     CAMERA_SOURCE,
     CAMERA_ID,
     AI_SERVER_URL,

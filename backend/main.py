@@ -58,6 +58,11 @@ print("=" * 60)
 
 model = YOLO(MODEL_PATH)
 
+PERSON_MODEL_PATH = r"E:\Littering_event_detection\yolo11n.pt"
+person_model = YOLO(PERSON_MODEL_PATH)
+
+print("Person model loaded successfully.")
+
 print("YOLO model loaded successfully.")
 print("Classes:", model.names)
 print("=" * 60)
@@ -73,6 +78,16 @@ ai_lock = threading.Lock()
 latest_ai_frame = None
 latest_camera_id = None
 
+# Latest structured AI detections
+detections_lock = threading.Lock()
+latest_detections = {
+    "frame": 0,
+    "timestamp_utc": None,
+    "camera_id": None,
+    "persons": [],
+    "waste": []
+}
+detection_frame_number = 0
 ai_running = True
 
 
@@ -191,6 +206,10 @@ def root():
         "service": "AI Server"
     }
 
+@app.get("/ai/detections")
+def get_ai_detections():
+    with detections_lock:
+        return dict(latest_detections)
 
 # =========================================================
 # CAMERA STATUS
