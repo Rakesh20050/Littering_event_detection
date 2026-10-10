@@ -11,6 +11,10 @@ Designed for low-latency streaming:
 - Keeps the newest frame available
 """
 
+from urllib import response
+
+from urllib import response
+
 import cv2
 import requests
 import threading
@@ -197,6 +201,8 @@ class FrameSender:
 
                     timeout=1
                 )
+                print("Upload status:", response.status_code)
+                print("Upload response:", response.text)
 
                 if response.status_code == 200:
 

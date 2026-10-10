@@ -7,7 +7,7 @@ CleanWatch AI - Camera Configuration
 # -------------------------------------------------------
 
 # Phone camera using IP Webcam
-CAMERA_SOURCE = "http://130.1.8.118:8080/video"
+CAMERA_SOURCE = "http://130.1.42.195:8080/video"
 
 
 # Unique camera identifier
